@@ -57,7 +57,8 @@ cpu_6502 cpu = {0};
 #pragma region Memory
 
 //memory vars
-u8 ram [65536];
+u8 memory [65536];
+u8 *rom;
 
 #pragma endregion
 
@@ -70,34 +71,58 @@ u8 ram [65536];
 
 #pragma endregion
 
-void decode_instruction();
+/*
+ * Take a filename and malloc it into our memory array
+ */
+int load_rom(char *filename);
+
+
+/*
+ * Takes an opcode and matches it to an instruction using
+ * the instruction struct detailed above
+ */
+void decode_instruction(char* opcode);
 
 
 //functiond decs
-void cpu_cycle();
 /*
  * fetch ->  pull hex instruction from file
  * decode -> {ptr array of instruction set}
  * execute -> call function from pointer array
  */
-void print_registers();
+void cpu_cycle();
+
 /*Prints the cpu register values, as well as the Interrupt request vector
  *
  *  PC  IRQ  SR AC X  Y  SP
  * XXXX XXXX XX XX XX XX XX
  *
 */
-u8 bus_read();
+void print_registers();
+
 /*
  * returns a single byte from the file
  */
-void bus_write(u8);
+u8 bus_read(u16 address);
+
 /*
  * writes a byte to memory
  */
+void bus_write(u8 value, u16 address);
+
 
 
 /*------------------------------------IMPLEMENTATION-----------------------------------------*/
+
+
+
+u8 bus_read(u16 address) {
+    return memory[address];
+}
+
+void bus_write(u8 value, u16 address) {
+    memory[address] = value;
+}
 
 void print_registers() {
     LINE
@@ -105,22 +130,36 @@ void print_registers() {
         cpu.regs.PC, cpu.regs.AC, cpu.regs.X, cpu.regs.Y,cpu.regs.SR.reg, cpu.regs.SP);
 }
 
+int load_rom(char filename[]) {
+    FILE *rom_file = fopen(filename, "rb");
+    if (!rom_file) {
+        printf("Error opening file %s\n", filename);
+        perror("Error opening file");
+        return 1;
+    }
+    fseek(rom_file, 0, SEEK_END);
+    int size = ftell(rom_file);
+    rewind(rom_file);
+    rom = calloc(1, size);
+    fread(rom, size, 1, rom_file);
+    fclose(rom_file);
+    return 0;
+}
 
 int main(int argc, char *argv[]) {
 
-    if (argc <1){perror("No ROM file provided");return 1;}
+    if (argc <2){perror("No ROM file provided");return -1;}
 
-    printf("Opening file");
-    //open and read file
+    printf("\nOpening file\n");
+    if (load_rom(argv[1]) == 1){return 1;}
+
     printf("Starting emulator\n");
-    while (1) {
-
-        //cpu_cycle
-        print_registers();
-        //if read and executed entire file, break
 
 
-    }
+    //Test
+    printf("TEST: %02X\n", rom[0]);
+
+
     return 0;
 }
 

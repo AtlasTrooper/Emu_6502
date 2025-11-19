@@ -1,0 +1,16 @@
+#This will only keep source files
+
+# Ignore CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.out
+*.o
+
+# Ignore IDE files
+.idea/
+.vscode/
+
+# Ignore binaries
+*.bin
