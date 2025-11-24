@@ -65,7 +65,10 @@ u8 bus_read(u16 address);
  */
 void bus_write(u8 value, u16 address);
 
-
+/*
+ * checks if we hit a BRK instruction, and exits if we did
+ */
+int check_terminate();
 
 /*------------------------------------IMPLEMENTATION-----------------------------------------*/
 
@@ -101,6 +104,41 @@ int load_rom(char filename[]) {
     return 0;
 }
 
+void cpu_cycle() {
+    //fetch
+    u8 op = rom[cpu.regs.PC]; //This is our instruction opcode in hex
+    LINE
+    printf("%02X\n", op);
+    LINE
+    //decode
+    if (instruction_set[op].addr_mode == 1) {
+        cpu.operand = rom[cpu.regs.PC + 1];
+        cpu.regs.PC += 2;
+    }
+    else if (instruction_set[op].addr_mode == 2) {
+        u16 lo = rom[cpu.regs.PC + 1];
+        u8 hi = rom[cpu.regs.PC + 2];
+        cpu.operand16 = (lo << 8) | (hi) ; // $LLHH operand
+        cpu.regs.PC += 3;
+    }
+    else{cpu.regs.PC +=1;}
+
+    //execute
+    instruction_set[op].instruction_ptr();
+}
+
+int check_terminate() {
+    if (rom[cpu.regs.PC] == 0x00) {
+        LINE
+        printf("Terminating...\n");
+        LINE
+        free(rom);
+        return 1;
+    }
+    return 0;
+
+}
+
 #pragma region instruction_set_functions
 
 //Set interrupt disable status
@@ -119,10 +157,17 @@ int main(int argc, char *argv[]) {
 
     printf("Starting emulator\n");
 
-    //Test
-    printf("\n %s \n",instruction_set[rom[0]+1].opcode);
-    instruction_set[rom[0]+1].instruction_ptr();
-    print_registers();
+    // //Test
+    // printf("\n %s \n",instruction_set[rom[0]+1].opcode);
+    // instruction_set[rom[0]+1].instruction_ptr();
+    // print_registers();
+
+    while (1) {
+        cpu_cycle();
+        print_registers();
+        if (check_terminate()){return 1;}
+
+    }
 
 
     return 0;
