@@ -6,17 +6,17 @@
 #define EMU_6502_INSTRUCTION_SET_H
 
 enum ADDR_MODE {
+    implied,
+    immediate,
     accumulator,
     absolute,
+    zeroPage,
     absoluteX,
     absoluteY,
-    immediate,
-    implied,
     indirect,
     xIndexedIndirect,
     indirectYIndexed,
     relative,
-    zeroPage,
     zerPageX,
     zerPageY,
 };
@@ -25,13 +25,12 @@ typedef struct {
     // Opcode hex num, cycleCount, ptr to function, addr mode
     char opcode[10];
     int cycles_count;
-    int byte_count;
     void (*instruction_ptr)(void);
 
     enum ADDR_MODE addr_mode;
 } cpu_instruction;
 
-
+void ORA();
 void SEI();
 
 /*
@@ -160,7 +159,7 @@ cpu_instruction instruction_set[256] = {
     {},
     {},
     {},
-    {"SEI", 2, 0, SEI, implied},
+    {"SEI", 2, SEI, implied},
     {},
     {},
     {},
