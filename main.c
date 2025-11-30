@@ -306,6 +306,47 @@ void disable_flag(u8 flag) {
 
 #pragma region AluFunctions
 
+void OR(u8 byte) {
+    cpu.regs.AC |= byte;
+
+    if (cpu.regs.AC & 0x80) {
+        enable_flag(N_FLAG);
+    }
+    else {
+        disable_flag(N_FLAG);
+    }
+    if (cpu.regs.AC == 0) {
+        enable_flag(Z_FLAG);
+    }
+    else {
+        disable_flag(Z_FLAG);
+    }
+
+}
+
+void AND(u8 byte) {
+    cpu.regs.AC &= byte;
+
+    if (cpu.regs.AC & 0x80) {
+        enable_flag(N_FLAG);
+    }
+    else {
+        disable_flag(N_FLAG);
+    }
+    if (cpu.regs.AC == 0) {
+        enable_flag(Z_FLAG);
+    }
+    else {
+        disable_flag(Z_FLAG);
+    }
+}
+
+void XOR(u8 byte) {
+    cpu.regs.AC ^= byte;
+}
+
+
+
 
 #pragma endregion
 
