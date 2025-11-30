@@ -164,14 +164,14 @@ void AddressMode(enum ADDR_MODE mode) {
         case zerPageX:
         case zerPageY:
         case relative:
+        case xIndexedIndirect:
+        case indirectYIndexed:
             byte_count = 1;
             break;
         case absolute:
         case absoluteX:
         case absoluteY:
         case indirect:
-        case xIndexedIndirect:
-        case indirectYIndexed:
             byte_count = 2;
             break;
 
