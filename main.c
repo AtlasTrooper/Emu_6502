@@ -302,47 +302,89 @@ void disable_flag(u8 flag) {
     cpu.regs.SR &= ~flag;
 }
 
+void check_flag(enum FLAGS flag, u16 byte) {
+    switch (flag) {
+        case N:
+            if (byte & 0x80) {
+                enable_flag(N_FLAG);
+            }
+            else {
+                disable_flag(N_FLAG);
+            }
+            break;
+        case Z:
+            if (byte == 0) {
+                enable_flag(Z_FLAG);
+            }
+            else {
+                disable_flag(Z_FLAG);
+            }
+            break;
+        default:
+            printf("\n Undefined Flag \n");
+    }
+}
+
 #pragma endregion
 
 #pragma region AluFunctions
 
-void OR(u8 byte) {
+void OR() {
+    u8 byte = bus_read(cpu.operand16);
     cpu.regs.AC |= byte;
-
-    if (cpu.regs.AC & 0x80) {
-        enable_flag(N_FLAG);
-    }
-    else {
-        disable_flag(N_FLAG);
-    }
-    if (cpu.regs.AC == 0) {
-        enable_flag(Z_FLAG);
-    }
-    else {
-        disable_flag(Z_FLAG);
-    }
+    check_flag(N, cpu.regs.AC);
+    check_flag(Z, cpu.regs.AC);
 
 }
 
-void AND(u8 byte) {
+void AND() {
+    u8 byte = bus_read(cpu.operand16);
     cpu.regs.AC &= byte;
+    check_flag(N, cpu.regs.AC);
+    check_flag(Z, cpu.regs.AC);
 
-    if (cpu.regs.AC & 0x80) {
-        enable_flag(N_FLAG);
-    }
-    else {
-        disable_flag(N_FLAG);
-    }
-    if (cpu.regs.AC == 0) {
-        enable_flag(Z_FLAG);
-    }
-    else {
-        disable_flag(Z_FLAG);
-    }
 }
 
-void XOR(u8 byte) {
+void XOR() {
+    u8 byte = bus_read(cpu.operand16);
     cpu.regs.AC ^= byte;
+    check_flag(N, cpu.regs.AC);
+    check_flag(Z, cpu.regs.AC);
+
+}
+
+void DEC() {
+    u8 byte = bus_read(cpu.operand16)-1;
+    check_flag(N, byte);
+    check_flag(Z, byte);
+    bus_write(cpu.operand16, byte);
+}
+void DEX() {
+    cpu.regs.X -=1;
+    check_flag(N, cpu.regs.X);
+    check_flag(Z, cpu.regs.X);
+}
+void DEY() {
+    cpu.regs.Y -=1;
+    check_flag(N, cpu.regs.Y);
+    check_flag(Z, cpu.regs.Y);
+}
+
+void INC() {
+    u8 byte = bus_read(cpu.operand16)+ 1;
+    check_flag(N, byte);
+    check_flag(Z, byte);
+    bus_write(cpu.operand16, byte);
+}
+void INX() {
+    cpu.regs.X += 1;
+    check_flag(N, cpu.regs.X);
+    check_flag(Z, cpu.regs.X);
+}
+void INY() {
+    cpu.regs.Y += 1;
+    check_flag(N, cpu.regs.Y);
+    check_flag(Z, cpu.regs.Y);
 }
 
 
@@ -357,20 +399,9 @@ int testBit(u8 byte, int bitNum) {
 
 #pragma region Instruction_Set_Functions
 
-void ORA() {
-    cpu.regs.AC |= cpu.operand;
-    if (cpu.regs.AC & (1 << 7)) {
-        enable_flag(N_FLAG);
-    } else { disable_flag(N_FLAG); }
-
-    if (cpu.regs.AC == 0) {
-        enable_flag(Z_FLAG);
-    } else { disable_flag(Z_FLAG); }
-}
-
 //Set interrupt disable status
 void SEI() {
-    cpu.regs.SR |= I_FLAG;
+    enable_flag(I_FLAG);
 }
 
 #pragma endregion

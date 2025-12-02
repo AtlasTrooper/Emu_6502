@@ -28,6 +28,16 @@ u8 I_FLAG = 0x20;
 u8 Z_FLAG = 0x40;
 u8 C_FLAG = 0x80;
 
+enum FLAGS {
+    N,
+    V,
+    B,
+    D,
+    I,
+    Z,
+    C
+};
+
 
 #define LINE printf("---------\n");
 
