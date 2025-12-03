@@ -13,9 +13,14 @@ typedef struct {
 
 typedef struct {
     //Cpu vars
-    u8 operand;
-    u16 operand16;
-    //Registers
+    union {
+        struct {
+            u8 lo;
+            u8 hi;
+        };
+        u16 operand16;
+    };
+        //Registers
     cpu_regs regs;
 } cpu_6502;
 
@@ -181,21 +186,21 @@ void AddressMode(enum ADDR_MODE mode) {
     }
 
     //Resetting the operands
-    cpu.operand = 0x00;
+    //cpu.operand = 0x00;
     cpu.operand16 = 0x00;
 
 
     //TODO: RESPEC FETCH SWITCH TO MATCH NEW ADDRESS MODE OPERAND USEAGE
     switch (byte_count) {
         case 1: {
-            cpu.operand = rom[cpu.regs.PC + 1];
+            cpu.lo = rom[cpu.regs.PC + 1];
             cpu.regs.PC += 2;
             break;
         }
         case 2: {
-            u8 lo = rom[cpu.regs.PC + 1];
-            u16 hi = rom[cpu.regs.PC + 2];
-            cpu.operand16 = (hi << 8) | (lo); // $LLHH operand
+            cpu.lo = rom[cpu.regs.PC + 1];
+            cpu.hi = rom[cpu.regs.PC + 2];
+
             cpu.regs.PC += 3;
             break;
         }
@@ -217,7 +222,7 @@ void AddressMode(enum ADDR_MODE mode) {
         }
         case zeroPage: {
             //zeroPage
-            cpu.operand16 = cpu.operand;
+            //operand stays the same
             break;
         }
         case absoluteX: {
@@ -233,11 +238,11 @@ void AddressMode(enum ADDR_MODE mode) {
             break;
         }
         case zerPageX: {
-            cpu.operand16 = (cpu.operand + cpu.regs.X) & 0xFF;
+            cpu.operand16 = (cpu.operand16 + cpu.regs.X) & 0xFF;
             break;
         }
         case zerPageY: {
-            cpu.operand16 = (cpu.operand + cpu.regs.Y) & 0xFF;
+            cpu.operand16 = (cpu.operand16 + cpu.regs.Y) & 0xFF;
             break;
         }
         case indirect: {
@@ -249,21 +254,21 @@ void AddressMode(enum ADDR_MODE mode) {
             break;
         }
         case xIndexedIndirect: {
-            u8 zero_page_lookupX = (cpu.operand + cpu.regs.X) & 0xFF;
+            u16 zero_page_lookupX = (cpu.operand16 + cpu.regs.X) & 0xFF;
             u8 lo = bus_read(zero_page_lookupX);
             u8 hi = bus_read((zero_page_lookupX + 1) & 0xFF);
             cpu.operand16 = ((u16) hi << 8) | lo;
             break;
         }
         case indirectYIndexed: {
-            u8 lo = bus_read(cpu.operand);
-            u8 hi = bus_read((cpu.operand + 1) & 0xFF);
+            u8 lo = bus_read(cpu.operand16);
+            u8 hi = bus_read((cpu.operand16 + 1) & 0xFF);
             cpu.operand16 = ((u16) hi << 8) | lo;
             cpu.operand16 += cpu.regs.Y;
             break;
         }
         case relative: {
-            cpu.operand = (int8_t) cpu.operand;
+            cpu.lo = (int8_t) cpu.lo;
             break;
         }
 
