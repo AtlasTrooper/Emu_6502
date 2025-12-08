@@ -391,6 +391,13 @@ void INY() {
     check_flag(N, cpu.regs.Y);
     check_flag(Z, cpu.regs.Y);
 }
+void ADC() {
+
+}
+
+void SBC() {
+
+}
 
 
 
