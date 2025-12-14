@@ -500,90 +500,114 @@ void SBC() {
 }
 
 void ASL(){
-	
-	if(cpu.cop == 0x0A){
-		cpu.regs.SR |= ((cpu.regs.AC &0x80) ? 1: 0);
-		cpu.regs.AC <<=1;
+   cpu.regs.SR &=~1;
+   if (cpu.cop == 0x0A){
+    //Accumulator mode
+    //reset C flag
+    cpu.regs.SR |= (cpu.regs.AC & 0x80 ? 1: 0);
+    cpu.regs.AC <<=1;
+    check_flag(Z, cpu.regs.AC);
+    check_flag(N, cpu.regs.AC);
+    
 
-		check_flag(N, cpu.regs.AC);
-		check_flag(Z, cpu.regs.AC);
-	}
-	else{
-		cpu.regs.SR |= (bus_read(cpu.operand16) & 0x80 ? 1: 0);
-		bus_write((bus_read(cpu.operand16) <<=1), cpu.operand16);
-	
-		check_flag(N, bus_read(cpu.operand16));
-		check_flag(Z, bus_read(cpu.operand16));
-	}
-
-	
+  } else{
+    //use operand
+    u8 byte = bus_read(cpu.operand16);
+    cpu.regs.SR |= (byte & 0x80 ? 1: 0);
+    byte <<=1;
+    bus_write(byte, cpu.operand16);
+    check_flag(Z, byte);
+    check_flag(N, byte);
+  }
 
 }
 
 void LSR(){
-	disable_flag(N_FLAG);
-	
-	if(cpu.cop == 0x4A){
-		//cpu.regs.SR &= (~0x80);
-		cpu.regs.SR |= (cpu.regs.AC & 1);	
-		cpu.regs.AC >>=1;
-		check_flag(N, cpu.regs.AC);
-		check_flag(Z, cpu.regs.AC);
-	}
-	else{
-		u8 byte = bus_read(cpu.operand16);
-		//cpu.regs.SR &= (~1);
-		cpu.regs.SR |= (byte &1);
-		byte >>=1;
-		bus_write(byte, cpu.operand16);
-		check_flag(N, byte);
-		check_flag(Z, byte);
+  cpu.regs.SR &=~1;
+  if(cpu.cop == 0x4A){
+    //Accumulator mode  
+    cpu.regs.SR |= (cpu.regs.AC & 1 ? 1:0);
+    cpu.regs.AC >>=1;
+    check_flag(N, cpu.regs.AC);
+    check_flag(Z, cpu.regs.AC);
 
-	}
+  } else{
+    //other address mode, use
+    //operand
+    u8 byte = bus_read(cpu.operand16);
+    cpu.regs.SR |= (byte & 1 ? 1:0);
+    byte >>=1;
+    bus_write(byte, cpu.operand16);
+    check_flag(N, byte);
+    check_flag(Z, byte);
 
-	
+  }
+
+
 }
 
-
-//TODO: FIX ROL AND ROR
 void ROL(){
-	
-	if(cpu.cop == 0x2A){
-		
-		cpu.regs.SR |= ((cpu.regs.AC & 0x80) ? 1: 0);
-		cpu.regs.AC <<=1;
-		//reset the one before ORing with new value
-		cpu.regs.AC |= (cpu.regs.SR & 1);
-		check_flag(N, cpu.regs.AC);
-		check_flag(Z, cpu.regs.AC);
-	}
-	else{
-		u8 byte = bus_read(cpu.operand16);
-		
-		cpu.regs.SR |= (byte & 0x80 ? 1: 0);
-		byte <<=1;
-
-		byte |= (cpu.regs.SR & 1);
-		bus_write(byte, cpu.operand16);
-		check_flag(N, byte);
-		check_flag(Z, byte);
-			
-	}
+/*
+ * Step-by-step algorithm (THIS IS CRITICAL)
+  Save old Carry
+  Set Carry from original bit 7
+  Shift left
+  Insert old Carry into bit 0
+  Update Z and N
+*/
+  u8 old_carry = cpu.regs.SR & 1;
+  cpu.regs.SR &=~1;
+  if(cpu.cop == 0x2A){
+      cpu.regs.SR |= (cpu.regs.AC & 0x80 ? 1:0);
+      cpu.regs.AC <<=1;
+      cpu.regs.AC |= old_carry;
+      check_flag(N, cpu.regs.AC);
+      check_flag(Z, cpu.regs.AC);
+      
+  } else{
+      u8 byte = bus_read(cpu.operand16);
+      cpu.regs.SR |= (byte & 0x80 ? 1:0);
+      byte <<=1;
+      byte |= old_carry;
+      bus_write(byte, cpu.operand16);
+      check_flag(N, byte);
+      check_flag(Z, byte);
+      
+  }
 
 }
 
 void ROR(){
-	
-	if(cpu.cop == 0x6A){
-		cpu.regs.SR &= (0x)
-		cpu.regs.SR |= (cpu.regs.AC & 1);
-		cpu.regs.AC >>=1;
-		cpu.regs.AC |= (cpu.regs.SR & 1 ? 0x80: 0);
-	}
+/*
+ * Step-by-step algorithm
+  Save old Carry
+  Set Carry from original bit 0
+  Shift right
+  Insert old Carry into bit 7
+  Update Z and N 
+ */
+  u8 old_carry = cpu.regs.SR &1;
+  cpu.regs.SR &=~1;
+  if(cpu.cop == 0x6A){
+    cpu.regs.SR |= (cpu.regs.AC & 0x1);
+    cpu.regs.AC >>=1;
+    check_flag(N, cpu.regs.AC);
+    check_flag(Z, cpu.regs.AC);
+
+  } else{
+    u8 byte = bus_read(cpu.operand16);
+    cpu.regs.SR |= (byte & 1);
+    byte >>=1;
+    bus_write(byte, cpu.operand16);
+    check_flag(N, byte);
+    check_flag(Z, byte);
+
+
+  }
+  cpu.regs.SR |= (old_carry <<7);
+
 
 }
-
-
 
 #pragma endregion
 

@@ -20,13 +20,13 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 
 //Flag positions
-u8 C_FLAG = 0x01;
-u8 Z_FLAG = 0x02;
-u8 I_FLAG = 0x08;
-u8 D_FLAG = 0x10;
-u8 B_FLAG = 0x20;
-u8 V_FLAG = 0x40;
-u8 N_FLAG = 0x80;
+const u8 C_FLAG = 0x01;
+const u8 Z_FLAG = 0x02;
+const u8 I_FLAG = 0x08;
+const u8 D_FLAG = 0x10;
+const u8 B_FLAG = 0x20;
+const u8 V_FLAG = 0x40;
+const u8 N_FLAG = 0x80;
 
 enum FLAGS {
     N,
