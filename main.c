@@ -22,6 +22,7 @@ typedef struct {
     };
         //Registers
     cpu_regs regs;
+	u8 cop;
 } cpu_6502;
 
 cpu_6502 cpu = {0};
@@ -212,9 +213,11 @@ void AddressMode(enum ADDR_MODE mode) {
     switch (mode) {
         case implied:
         case immediate:
+			break;
         case accumulator:
-
+			
             //Implied/Immediate/AC, no adjust required
+			cpu.operand16 = cpu.regs.AC;
             break;
         case absolute: {
             //Address will be the operand16
@@ -280,17 +283,17 @@ void AddressMode(enum ADDR_MODE mode) {
 
 void cpu_cycle() {
     //fetch
-    u8 op = rom[cpu.regs.PC]; //This is our instruction opcode in hex
+    cpu.cop = rom[cpu.regs.PC]; //This is our instruction opcode in hex
     LINE
-    printf("%02X\n", op);
+    printf("%02X\n", cpu.cop);
     LINE
     //decode
 
     //pull needed bytes and adjust operands for address mode
-    AddressMode(instruction_set[op].addr_mode);
+    AddressMode(instruction_set[cpu.cop].addr_mode);
 
     //execute
-    instruction_set[op].instruction_ptr();
+    instruction_set[cpu.cop].instruction_ptr();
 }
 
 void print_registers() {
@@ -324,13 +327,98 @@ void check_flag(enum FLAGS flag, u16 byte) {
             else {
                 disable_flag(Z_FLAG);
             }
-            break;
+           break;
+		case C:
+		   if(byte > 0xFF){
+				enable_flag(C_FLAG);
+		   }
+		   else{
+			   disable_flag(C_FLAG);
+			}
+		   break;
         default:
             printf("\n Undefined Flag \n");
     }
 }
 
 #pragma endregion
+
+#pragma region Transfer_Instructions
+
+void LDA(){
+	cpu.regs.AC = bus_read(cpu.operand16);
+	check_flag(N, cpu.regs.AC);
+	check_flag(Z, cpu.regs.AC);
+
+}
+
+void LDX(){
+	
+	cpu.regs.X = bus_read(cpu.operand16);
+	check_flag(N, cpu.regs.X);
+	check_flag(Z, cpu.regs.X); 
+
+
+}
+
+void LDY(){
+
+	cpu.regs.Y = bus_read(cpu.operand16);
+	check_flag(N, cpu.regs.Y);
+	check_flag(Z, cpu.regs.Y);
+
+}
+
+void STA(){
+	bus_write(cpu.regs.AC, cpu.operand16);
+
+}
+
+void STX(){
+	bus_write(cpu.regs.X, cpu.operand16);
+}
+
+void STY(){
+	bus_write(cpu.regs.Y, cpu.operand16);
+}
+
+//we americans don't like that
+void TAX(){
+	cpu.regs.X = cpu.regs.AC;
+	check_flag(N, cpu.regs.X);
+	check_flag(Z, cpu.regs.X);
+}
+
+void TAY(){
+	cpu.regs.Y = cpu.regs.AC;
+	check_flag(N, cpu.regs.Y);
+	check_flag(Z, cpu.regs.Y);
+}
+
+void TSX(){
+	cpu.regs.X = cpu.regs.SP;
+	check_flag(N, cpu.regs.X);
+	check_flag(Z, cpu.regs.X);
+}
+
+void TXA(){
+	cpu.regs.AC = cpu.regs.X;
+	check_flag(N, cpu.regs.AC);
+	check_flag(Z, cpu.regs.AC);
+}
+
+//Texas instruments?
+void TXS(){
+	cpu.regs.SP = cpu.regs.X;
+}
+
+void TYA(){
+	cpu.regs.SP = cpu.regs.Y;
+}
+
+
+#pragma endregion
+
 
 #pragma region AluFunctions
 
@@ -392,29 +480,199 @@ void INY() {
     check_flag(Z, cpu.regs.Y);
 }
 void ADC() {
-
+	//Add memory to A with carry
+	//check NZC flags following op
+	u8 byte = bus_read(cpu.operand16);
+	cpu.regs.AC += byte += (cpu.regs.SR & C_FLAG);
+	check_flag(C, cpu.regs.AC);
+	check_flag(N, cpu.regs.AC);
+	check_flag(Z, cpu.regs.AC);
+	
+	
 }
 
 void SBC() {
+	u8 byte = bus_read(cpu.operand16);
+	cpu.regs.AC -= byte -= (cpu.regs.SR & C_FLAG);
+	check_flag(C, cpu.regs.AC);
+	check_flag(N, cpu.regs.AC);
+	check_flag(Z, cpu.regs.AC);
+}
+
+void ASL(){
+	
+	if(cpu.cop == 0x0A){
+		cpu.regs.SR |= ((cpu.regs.AC &0x80) ? 1: 0);
+		cpu.regs.AC <<=1;
+
+		check_flag(N, cpu.regs.AC);
+		check_flag(Z, cpu.regs.AC);
+	}
+	else{
+		cpu.regs.SR |= (bus_read(cpu.operand16) & 0x80 ? 1: 0);
+		bus_write((bus_read(cpu.operand16) <<=1), cpu.operand16);
+	
+		check_flag(N, bus_read(cpu.operand16));
+		check_flag(Z, bus_read(cpu.operand16));
+	}
+
+	
 
 }
 
+void LSR(){
+	disable_flag(N_FLAG);
+	
+	if(cpu.cop == 0x4A){
+		//cpu.regs.SR &= (~0x80);
+		cpu.regs.SR |= (cpu.regs.AC & 1);	
+		cpu.regs.AC >>=1;
+		check_flag(N, cpu.regs.AC);
+		check_flag(Z, cpu.regs.AC);
+	}
+	else{
+		u8 byte = bus_read(cpu.operand16);
+		//cpu.regs.SR &= (~1);
+		cpu.regs.SR |= (byte &1);
+		byte >>=1;
+		bus_write(byte, cpu.operand16);
+		check_flag(N, byte);
+		check_flag(Z, byte);
+
+	}
+
+	
+}
+
+
+//TODO: FIX ROL AND ROR
+void ROL(){
+	
+	if(cpu.cop == 0x2A){
+		
+		cpu.regs.SR |= ((cpu.regs.AC & 0x80) ? 1: 0);
+		cpu.regs.AC <<=1;
+		//reset the one before ORing with new value
+		cpu.regs.AC |= (cpu.regs.SR & 1);
+		check_flag(N, cpu.regs.AC);
+		check_flag(Z, cpu.regs.AC);
+	}
+	else{
+		u8 byte = bus_read(cpu.operand16);
+		
+		cpu.regs.SR |= (byte & 0x80 ? 1: 0);
+		byte <<=1;
+
+		byte |= (cpu.regs.SR & 1);
+		bus_write(byte, cpu.operand16);
+		check_flag(N, byte);
+		check_flag(Z, byte);
+			
+	}
+
+}
+
+void ROR(){
+	
+	if(cpu.cop == 0x6A){
+		cpu.regs.SR &= (0x)
+		cpu.regs.SR |= (cpu.regs.AC & 1);
+		cpu.regs.AC >>=1;
+		cpu.regs.AC |= (cpu.regs.SR & 1 ? 0x80: 0);
+	}
+
+}
 
 
 
 #pragma endregion
 
-int testBit(u8 byte, int bitNum) {
-    return (byte & (1 << bitNum)) > 0;
+#pragma region MISC_Instructions
+
+void BIT(){
+
 }
+
+void NOP(){
+	//Nothing to see here
+}
+
+#pragma endregion MISC_Instructions
 
 
 #pragma region Instruction_Set_Functions
 
-//Set interrupt disable status
-void SEI() {
-    enable_flag(I_FLAG);
+
+
+#pragma region Flag_Instructions
+
+void CLC(){
+	disable_flag(C_FLAG);
 }
+
+void CLD(){
+
+	disable_flag(D_FLAG);
+
+}
+
+
+void CLI(){
+
+	disable_flag(I_FLAG);
+}
+
+void CLV(){
+
+	disable_flag(V_FLAG);
+}
+
+void SEC(){
+
+	enable_flag(C_FLAG);
+}
+
+void SED(){
+	
+	enable_flag(D_FLAG);
+
+}
+
+void SEI(){
+
+	enable_flag(I_FLAG);
+}
+
+#pragma endregion Flag_Instructions
+
+#pragma region Compare_Instructions
+
+void CMP(){
+
+	u16 res = cpu.regs.AC - cpu.operand16;
+	check_flag(C, res);
+	check_flag(N, res);
+	check_flag(Z, res);
+
+
+}
+
+void CPX(){
+	u16 res = cpu.regs.X -cpu.operand16;
+	check_flag(C, res);
+	check_flag(N, res);
+	check_flag(Z, res);
+}
+
+void CPY(){
+	u16 res = cpu.regs.Y -cpu.operand16;
+	check_flag(C, res);
+	check_flag(N, res);
+	check_flag(Z, res);
+}
+
+
+#pragma endregion Compare_Instructions
 
 #pragma endregion
 
