@@ -1,5 +1,6 @@
 #include "qol.h"
 
+
 #pragma region CPU
 
 typedef struct {
@@ -32,8 +33,7 @@ cpu_6502 cpu = {0};
  * and adjusts the operands accordingly so
  * that the instruction performs properly
  */
-void addressMode(enum ADDR_MODE mode) {
-}
+void addressMode(enum ADDR_MODE mode);
 
 /*
  * fetch ->  pull hex instruction from file
@@ -71,6 +71,7 @@ void disable_flag(u8 flag);
 //memory vars
 u8 memory[65536];
 u8 *rom;
+#define STACK_ADDR 0x0100
 
 /*
  * returns a single byte from memory
@@ -109,7 +110,7 @@ int check_terminate();
  *This returns true if the specified
  *bit is enabled and false if otherwise
  */
-int testBit(u8 byte, int bitNum);
+
 
 /*------------------------------------IMPLEMENTATION-----------------------------------------*/
 
@@ -276,6 +277,7 @@ void AddressMode(enum ADDR_MODE mode) {
         }
 
         default:
+            break;
 
 
     }
@@ -315,9 +317,11 @@ void check_flag(enum FLAGS flag, u16 byte) {
         case N:
             if (byte & 0x80) {
                 enable_flag(N_FLAG);
+                
             }
             else {
                 disable_flag(N_FLAG);
+                
             }
             break;
         case Z:
@@ -328,17 +332,22 @@ void check_flag(enum FLAGS flag, u16 byte) {
                 disable_flag(Z_FLAG);
             }
            break;
-		case C:
-		   if(byte > 0xFF){
-				enable_flag(C_FLAG);
-		   }
-		   else{
-			   disable_flag(C_FLAG);
-			}
-		   break;
+		    case C:
+		      if(byte > 0xFF){
+				    enable_flag(C_FLAG);
+		      }
+		      else{
+			    disable_flag(C_FLAG);
+			    }
+		      break;
+
         default:
             printf("\n Undefined Flag \n");
     }
+}
+
+int is_flag_set(u8 flag){
+  return((cpu.regs.SR & flag)!=0);
 }
 
 #pragma endregion
@@ -611,9 +620,70 @@ void ROR(){
 
 #pragma endregion
 
+
+#pragma region Stack_Instructions
+
+void Push(u8 value){
+  bus_write(value, STACK_ADDR | cpu.regs.SP);
+  cpu.regs.SP --;
+  
+}
+
+u8 Pop(){
+  cpu.regs.SP ++;
+  return bus_read(STACK_ADDR | cpu.regs.SP);
+
+}
+
+void Push16(u16 value){
+  Push((value >> 8) & 0xFF);
+  Push(value & 0xFF);
+}
+
+u16 Pop16(){
+  u8 lo = Pop();
+  u8 hi = Pop();
+  return ((hi << 8) | lo);
+}
+
+//
+void PHA(){
+  Push(cpu.regs.AC); 
+}
+
+void PHP(){
+  //The status register will be pushed with
+  //the break flag and bit 5 set to 1
+  u8 sr = ((cpu.regs.SR | 0x30));// which one is bit 5?);
+}
+
+void PLA(){
+  cpu.regs.AC = Pop();
+  check_flag(N, cpu.regs.AC);
+  check_flag(Z, cpu.regs.AC);
+}
+
+void PLP(){
+ cpu.regs.SR = (Pop() & 0xEF) | 0x20;
+}
+
+#pragma endregion
+
+
 #pragma region MISC_Instructions
 
 void BIT(){
+  //to do:
+  // grab AC and mem byte
+  // AND them and use result to:
+  // 1. Store bit 7 in N flag
+  // 2. Store bit 6 in V flag
+  // 3. Check Z flag
+  u8 res = cpu.regs.AC & bus_read(cpu.operand16);
+  res & 0x80 ? enable_flag(N_FLAG): disable_flag(N_FLAG);
+res & 0x40 ? enable_flag(V_FLAG): disable_flag(V_FLAG);
+  check_flag(Z, res);
+  
 
 }
 
@@ -623,10 +693,104 @@ void NOP(){
 
 #pragma endregion MISC_Instructions
 
+#pragma region Conditional_Branch_Instructions
 
-#pragma region Instruction_Set_Functions
+void BRANCH_IF(int cond){
+  if(cond){
+    cpu.regs.PC += (int8_t)cpu.lo;
+  }
+}
+
+void BCC(){
+  BRANCH_IF(!is_flag_set(C_FLAG));
+}
+
+void BCS(){
+  BRANCH_IF(is_flag_set(C_FLAG));
+}
+
+void BEQ(){
+  BRANCH_IF(is_flag_set(Z_FLAG));
+}
+
+void BNE(){
+ BRANCH_IF(!is_flag_set(Z_FLAG));
+}
+
+void BMI(){
+  BRANCH_IF(is_flag_set(N_FLAG));
+}
+
+void BPL(){
+BRANCH_IF(!is_flag_set(N_FLAG));
+}
+
+void BVS(){
+  BRANCH_IF(is_flag_set(V_FLAG));
+}
+
+void BVC(){
+  BRANCH_IF(!is_flag_set(V_FLAG));
+}
 
 
+
+
+#pragma endregion Conditional_Branch_Instructions
+
+#pragma region Jumps_and_Subroutines
+
+void JMP(){
+
+  if(cpu.cop == 0x4C){
+    cpu.regs.PC = cpu.operand16;
+  }
+  else {
+
+    u16 ptr = cpu.operand16;
+    u8 lo = bus_read(ptr);
+    u8 hi = bus_read((ptr & 0xFF00) | ((ptr + 1) & 0x00FF));
+
+    cpu.regs.PC = ((hi << 8 ) | lo);
+  }
+}
+/*
+void INDIR_JMP(){
+  u16 ptr = cpu.operand16;
+  u8 lo = bus_read(ptr);
+  u8 hi = bus_read((ptr & 0xFF00) | ((ptr + 1) & 0x00FF));
+
+  cpu.regs.PC = ((hi << 8 ) | lo);
+}
+*/
+void JSR(){
+  //Push the program counter by 2
+  //PC low = operand lo 
+  //PC hi = operand hi 
+  Push16(cpu.regs.PC -1);
+  cpu.regs.PC = cpu.operand16;
+}
+
+void RTS(){
+  cpu.regs.PC = Pop16() + 1;
+
+}
+
+
+#pragma endregion Jumps_and_Subroutines
+
+#pragma region Interrupts
+
+void BRK(){
+  
+}
+
+
+void RTI(){
+  
+}
+
+#pragma endregion Interrupts
 
 #pragma region Flag_Instructions
 
@@ -697,8 +861,6 @@ void CPY(){
 
 
 #pragma endregion Compare_Instructions
-
-#pragma endregion
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
