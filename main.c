@@ -722,7 +722,7 @@ void BMI(){
 }
 
 void BPL(){
-BRANCH_IF(!is_flag_set(N_FLAG));
+BRANCH_IF(is_flag_set(N_FLAG));
 }
 
 void BVS(){
@@ -782,12 +782,24 @@ void RTS(){
 #pragma region Interrupts
 
 void BRK(){
-  
+ cpu.regs.PC ++;
+  Push16(cpu.regs.PC);
+  Push(cpu.regs.SR | B_FLAG);
+  cpu.regs.SR |=I_FLAG;
+
+  u8 lo = bus_read(0xFFEE);
+  u8 hi = bus_read(0xFFFF);
+
+  cpu.regs.PC = (hi << 8) | lo;
+
+
 }
 
 
 void RTI(){
-  
+  cpu.regs.SR = Pop();
+  cpu.regs.SR &= ~B_FLAG;
+  cpu.regs.PC = Pop16();
 }
 
 #pragma endregion Interrupts
