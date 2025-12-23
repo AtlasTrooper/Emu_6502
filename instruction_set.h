@@ -36,27 +36,27 @@ typedef struct {
 } cpu_instruction;
 
 void LDA();
-void LDERR();
+void LDX();
 void LDY();
 void STA();
-void STERR();
+void STX();
 void STY();
-void TAERR();
+void TAX();
 void TAY();
-void TSERR();
-void TERRA();
-void TERRS();
+void TSX();
+void TXA();
+void TXS();
 void TYA();
 
 void OR();
 void AND();
-void ERROR();
+void XOR();
 void DEC();
-void DEERR();
+void DEX();
 void DEY();
 
 void INC();
-void INERR();
+void INX();
 void INY();
 void ADC();
 void SBC();
@@ -105,7 +105,7 @@ void SED();
 void SEI();
 
 void CMP();
-void CPERR();
+void CPX();
 void CPY();
 
 
@@ -139,15 +139,15 @@ cpu_instruction instruction_set[INSTRUCTION_SET_SIZE] = {
 /* 0x38 */ I("38",2,SEC,implied),          I("39",4,AND,absoluteY),       ERR, ERR,
 /* 0x3C */ ERR,                             I("3D",4,AND,absoluteX),       I("3E",7,ROL,absoluteX), ERR,
 
-/* 0x40 */ I("40",6,RTI,implied),          I("41",6,ERROR,xIndexedIndirect), ERR, ERR,
-/* 0x44 */ ERR,                             I("45",3,ERROR,zeroPage),        I("46",5,LSR,zeroPage), ERR,
-/* 0x48 */ I("48",3,PHA,implied),          I("49",2,ERROR,immediate),       I("4A",2,LSR,accumulator), ERR,
-/* 0x4C */ I("4C",3,JMP,absolute),         I("4D",4,ERROR,absolute),        I("4E",6,LSR,absolute), ERR,
+/* 0x40 */ I("40",6,RTI,implied),          I("41",6,XOR,xIndexedIndirect), ERR, ERR,
+/* 0x44 */ ERR,                             I("45",3,XOR,zeroPage),        I("46",5,LSR,zeroPage), ERR,
+/* 0x48 */ I("48",3,PHA,implied),          I("49",2,XOR,immediate),       I("4A",2,LSR,accumulator), ERR,
+/* 0x4C */ I("4C",3,JMP,absolute),         I("4D",4,XOR,absolute),        I("4E",6,LSR,absolute), ERR,
 
-/* 0x50 */ I("50",2,BVC,relative),         I("51",5,ERROR,indirectYIndexed), ERR, ERR,
-/* 0x54 */ ERR,                             I("55",4,ERROR,zerPageX),         I("56",6,LSR,zerPageX), ERR,
-/* 0x58 */ I("58",2,CLI,implied),          I("59",4,ERROR,absoluteY),       ERR, ERR,
-/* 0x5C */ ERR,                             I("5D",4,ERROR,absoluteX),       I("5E",7,LSR,absoluteX), ERR,
+/* 0x50 */ I("50",2,BVC,relative),         I("51",5,XOR,indirectYIndexed), ERR, ERR,
+/* 0x54 */ ERR,                             I("55",4,XOR,zerPageX),         I("56",6,LSR,zerPageX), ERR,
+/* 0x58 */ I("58",2,CLI,implied),          I("59",4,XOR,absoluteY),       ERR, ERR,
+/* 0x5C */ ERR,                             I("5D",4,XOR,absoluteX),       I("5E",7,LSR,absoluteX), ERR,
 
 /* 0x60 */ I("60",6,RTS,implied),          I("61",6,ADC,xIndexedIndirect), ERR, ERR,
 /* 0x64 */ ERR,                             I("65",3,ADC,zeroPage),        I("66",5,ROR,zeroPage), ERR,
@@ -160,28 +160,28 @@ cpu_instruction instruction_set[INSTRUCTION_SET_SIZE] = {
 /* 0x7C */ ERR,                             I("7D",4,ADC,absoluteX),       I("7E",7,ROR,absoluteX), ERR,
 
 /* 0x80 */ ERR,                             I("81",6,STA,xIndexedIndirect), ERR, ERR,
-/* 0x84 */ I("84",3,STY,zeroPage),         I("85",3,STA,zeroPage),        I("86",3,STERR,zeroPage), ERR,
-/* 0x88 */ I("88",2,DEY,implied),          ERR,                             I("8A",2,TERRA,implied), ERR,
-/* 0x8C */ I("8C",4,STY,absolute),         I("8D",4,STA,absolute),        I("8E",4,STERR,absolute), ERR,
+/* 0x84 */ I("84",3,STY,zeroPage),         I("85",3,STA,zeroPage),        I("86",3,STX,zeroPage), ERR,
+/* 0x88 */ I("88",2,DEY,implied),          ERR,                             I("8A",2,TXA,implied), ERR,
+/* 0x8C */ I("8C",4,STY,absolute),         I("8D",4,STA,absolute),        I("8E",4,STX,absolute), ERR,
 
 /* 0x90 */ I("90",2,BCC,relative),         I("91",6,STA,indirectYIndexed), ERR, ERR,
-/* 0x94 */ I("94",4,STY,zerPageX),         I("95",4,STA,zerPageX),        I("96",4,STERR,zerPageY), ERR,
-/* 0x98 */ I("98",2,TYA,implied),          I("99",5,STA,absoluteY),       I("9A",2,TERRS,implied), ERR,
+/* 0x94 */ I("94",4,STY,zerPageX),         I("95",4,STA,zerPageX),        I("96",4,STX,zerPageY), ERR,
+/* 0x98 */ I("98",2,TYA,implied),          I("99",5,STA,absoluteY),       I("9A",2,TXS,implied), ERR,
 /* 0x9C */ ERR,                             I("9D",5,STA,absoluteX),       ERR, ERR,
 
-/* 0xA0 */ I("A0",2,LDY,immediate),        I("A1",6,LDA,xIndexedIndirect), I("A2",2,LDERR,immediate), ERR,
-/* 0xA4 */ I("A4",3,LDY,zeroPage),         I("A5",3,LDA,zeroPage),        I("A6",3,LDERR,zeroPage), ERR,
-/* 0xA8 */ I("A8",2,TAY,implied),          I("A9",2,LDA,immediate),       I("AA",2,TAERR,implied), ERR,
-/* 0xAC */ I("AC",4,LDY,absolute),         I("AD",4,LDA,absolute),        I("AE",4,LDERR,absolute), ERR,
+/* 0xA0 */ I("A0",2,LDY,immediate),        I("A1",6,LDA,xIndexedIndirect), I("A2",2,LDX,immediate), ERR,
+/* 0xA4 */ I("A4",3,LDY,zeroPage),         I("A5",3,LDA,zeroPage),        I("A6",3,LDX,zeroPage), ERR,
+/* 0xA8 */ I("A8",2,TAY,implied),          I("A9",2,LDA,immediate),       I("AA",2,TAX,implied), ERR,
+/* 0xAC */ I("AC",4,LDY,absolute),         I("AD",4,LDA,absolute),        I("AE",4,LDX,absolute), ERR,
 
 /* 0xB0 */ I("B0",2,BCS,relative),         I("B1",5,LDA,indirectYIndexed), ERR, ERR,
-/* 0xB4 */ I("B4",4,LDY,zerPageX),         I("B5",4,LDA,zerPageX),        I("B6",4,LDERR,zerPageY), ERR,
-/* 0xB8 */ I("B8",2,CLV,implied),          I("B9",4,LDA,absoluteY),       I("BA",2,TSERR,implied), ERR,
-/* 0xBC */ I("BC",4,LDY,absoluteX),        I("BD",4,LDA,absoluteX),       I("BE",4,LDERR,absoluteY), ERR,
+/* 0xB4 */ I("B4",4,LDY,zerPageX),         I("B5",4,LDA,zerPageX),        I("B6",4,LDX,zerPageY), ERR,
+/* 0xB8 */ I("B8",2,CLV,implied),          I("B9",4,LDA,absoluteY),       I("BA",2,TSX,implied), ERR,
+/* 0xBC */ I("BC",4,LDY,absoluteX),        I("BD",4,LDA,absoluteX),       I("BE",4,LDX,absoluteY), ERR,
 
 /* 0xC0 */ I("C0",2,CPY,immediate),        I("C1",6,CMP,xIndexedIndirect), ERR, ERR,
 /* 0xC4 */ I("C4",3,CPY,zeroPage),         I("C5",3,CMP,zeroPage),        I("C6",5,DEC,zeroPage), ERR,
-/* 0xC8 */ I("C8",2,INY,implied),          I("C9",2,CMP,immediate),       I("CA",2,DEERR,implied), ERR,
+/* 0xC8 */ I("C8",2,INY,implied),          I("C9",2,CMP,immediate),       I("CA",2,DEX,implied), ERR,
 /* 0xCC */ I("CC",4,CPY,absolute),         I("CD",4,CMP,absolute),        I("CE",6,DEC,absolute), ERR,
 
 /* 0xD0 */ I("D0",2,BNE,relative),         I("D1",5,CMP,indirectYIndexed), ERR, ERR,
@@ -189,10 +189,10 @@ cpu_instruction instruction_set[INSTRUCTION_SET_SIZE] = {
 /* 0xD8 */ I("D8",2,CLD,implied),          I("D9",4,CMP,absoluteY),       ERR, ERR,
 /* 0xDC */ ERR,                             I("DD",4,CMP,absoluteX),       I("DE",7,DEC,absoluteX), ERR,
 
-/* 0xE0 */ I("E0",2,CPERR,immediate),        I("E1",6,SBC,xIndexedIndirect), ERR, ERR,
-/* 0xE4 */ I("E4",3,CPERR,zeroPage),         I("E5",3,SBC,zeroPage),        I("E6",5,INC,zeroPage), ERR,
-/* 0xE8 */ I("E8",2,INERR,implied),          I("E9",2,SBC,immediate),       I("EA",2,NOP,implied), ERR,
-/* 0xEC */ I("EC",4,CPERR,absolute),         I("ED",4,SBC,absolute),        I("EE",6,INC,absolute), ERR,
+/* 0xE0 */ I("E0",2,CPX,immediate),        I("E1",6,SBC,xIndexedIndirect), ERR, ERR,
+/* 0xE4 */ I("E4",3,CPX,zeroPage),         I("E5",3,SBC,zeroPage),        I("E6",5,INC,zeroPage), ERR,
+/* 0xE8 */ I("E8",2,INX,implied),          I("E9",2,SBC,immediate),       I("EA",2,NOP,implied), ERR,
+/* 0xEC */ I("EC",4,CPX,absolute),         I("ED",4,SBC,absolute),        I("EE",6,INC,absolute), ERR,
 
 /* 0xF0 */ I("F0",2,BEQ,relative),         I("F1",5,SBC,indirectYIndexed), ERR, ERR,
 /* 0xF4 */ ERR,                             I("F5",4,SBC,zerPageX),         I("F6",6,INC,zerPageX), ERR,
