@@ -1,3 +1,4 @@
+
 #include "qol.h"
 
 
@@ -557,7 +558,7 @@ void LSR(){
 
 void ROL(){
 /*
- * Step-by-step algorithm (THIS IS CRITICAL)
+ * Step-by-step algorithm
   Save old Carry
   Set Carry from original bit 7
   Shift left
@@ -654,7 +655,7 @@ void PHA(){
 void PHP(){
   //The status register will be pushed with
   //the break flag and bit 5 set to 1
-  u8 sr = ((cpu.regs.SR | 0x30));// which one is bit 5?);
+  Push(cpu.regs.SR | B_FLAG);
 }
 
 void PLA(){
@@ -664,7 +665,8 @@ void PLA(){
 }
 
 void PLP(){
- cpu.regs.SR = (Pop() & 0xEF) | 0x20;
+ cpu.regs.SR = Pop();
+    cpu.regs.SR &= ~B_FLAG;
 }
 
 #pragma endregion
