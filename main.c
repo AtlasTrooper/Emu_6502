@@ -366,7 +366,12 @@ int is_flag_set(u8 flag){
 #pragma region Transfer_Instructions
 
 void LDA(){
-	cpu.regs.AC = bus_read(cpu.operand16);
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        cpu.regs.AC = cpu.operand16;
+    }
+    else {
+        cpu.regs.AC = bus_read(cpu.operand16);
+    }
 	check_flag(N, cpu.regs.AC);
 	check_flag(Z, cpu.regs.AC);
 
@@ -374,15 +379,25 @@ void LDA(){
 
 void LDX(){
 
-	cpu.regs.X = bus_read(cpu.operand16);
-	check_flag(N, cpu.regs.X);
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        cpu.regs.X = cpu.operand16;
+    }
+	else {
+	    cpu.regs.X = bus_read(cpu.operand16);
+	}
+    check_flag(N, cpu.regs.X);
 	check_flag(Z, cpu.regs.X); 
 
 
 }
 
 void LDY(){
-    cpu.regs.Y = bus_read(cpu.operand16);
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        cpu.regs.Y = cpu.operand16;
+    }
+    else {
+        cpu.regs.Y = bus_read(cpu.operand16);
+    }
 	check_flag(N, cpu.regs.Y);
 	check_flag(Z, cpu.regs.Y);
 
@@ -442,7 +457,14 @@ void TYA(){
 #pragma region AluFunctions
 
 void OR() {
-    u8 byte = bus_read(cpu.operand16);
+
+    u8 byte;
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        byte = cpu.operand16;
+    }
+    else {
+        byte = bus_read(cpu.operand16);
+    }
     cpu.regs.AC |= byte;
     check_flag(N, cpu.regs.AC);
     check_flag(Z, cpu.regs.AC);
@@ -450,7 +472,13 @@ void OR() {
 }
 
 void AND() {
-    u8 byte = bus_read(cpu.operand16);
+    u8 byte;
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        byte = cpu.operand16;
+    }
+    else {
+        byte = bus_read(cpu.operand16);
+    }
     cpu.regs.AC &= byte;
     check_flag(N, cpu.regs.AC);
     check_flag(Z, cpu.regs.AC);
@@ -458,7 +486,13 @@ void AND() {
 }
 
 void XOR() {
-    u8 byte = bus_read(cpu.operand16);
+    u8 byte;
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        byte = cpu.operand16;
+    }
+    else {
+        byte = bus_read(cpu.operand16);
+    }
     cpu.regs.AC ^= byte;
     check_flag(N, cpu.regs.AC);
     check_flag(Z, cpu.regs.AC);
@@ -501,7 +535,13 @@ void INY() {
 void ADC() {
 	//Add memory to A with carry
 	//check NZC flags following op
-	u8 byte = bus_read(cpu.operand16);
+    u8 byte;
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        byte = cpu.operand16;
+    }
+    else {
+        byte = bus_read(cpu.operand16);
+    }
 	cpu.regs.AC += byte += (cpu.regs.SR & C_FLAG);
 	check_flag(C, cpu.regs.AC);
 	check_flag(N, cpu.regs.AC);
@@ -511,7 +551,13 @@ void ADC() {
 }
 
 void SBC() {
-	u8 byte = bus_read(cpu.operand16);
+    u8 byte;
+    if (instruction_set[cpu.cop].addr_mode == immediate) {
+        byte = cpu.operand16;
+    }
+    else {
+        byte = bus_read(cpu.operand16);
+    }
 	cpu.regs.AC -= byte -= (cpu.regs.SR & C_FLAG);
 	check_flag(C, cpu.regs.AC);
 	check_flag(N, cpu.regs.AC);
@@ -733,7 +779,7 @@ void BMI(){
 }
 
 void BPL(){
-BRANCH_IF(is_flag_set(N_FLAG));
+BRANCH_IF(!is_flag_set(N_FLAG));
 }
 
 void BVS(){
