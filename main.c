@@ -301,8 +301,8 @@ void cpu_cycle() {
 
 void print_registers() {
     LINE
-    printf("PC: %04X | AC: %02X | X: %02X | Y:%02X | SR: %02X | SP: %02X \n",
-           cpu.regs.PC, cpu.regs.AC, cpu.regs.X, cpu.regs.Y, cpu.regs.SR, cpu.regs.SP);
+    printf("PC: %04X | AC: %04X | X: %02X | Y:%02X | SR: %02X | SP: %02X | OPER L: %u | OPER H: %u \n",
+           cpu.regs.PC, cpu.regs.AC, cpu.regs.X, cpu.regs.Y, cpu.regs.SR, cpu.regs.SP, cpu.lo, cpu.hi);
 }
 
 void enable_flag(u8 flag) {
@@ -363,7 +363,7 @@ void LDA(){
 }
 
 void LDX(){
-	
+
 	cpu.regs.X = bus_read(cpu.operand16);
 	check_flag(N, cpu.regs.X);
 	check_flag(Z, cpu.regs.X); 
@@ -372,8 +372,7 @@ void LDX(){
 }
 
 void LDY(){
-
-	cpu.regs.Y = bus_read(cpu.operand16);
+    cpu.regs.Y = bus_read(cpu.operand16);
 	check_flag(N, cpu.regs.Y);
 	check_flag(Z, cpu.regs.Y);
 
@@ -877,10 +876,10 @@ void CPY(){
 #pragma endregion Compare_Instructions
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        perror("No ROM file provided");
-        return -1;
-    }
+    // if (argc < 2) {
+    //     perror("No ROM file provided");
+    //     return -1;
+    // }
 
     printf("\nOpening file\n");
     if (load_rom(argv[1]) == 1) { return 1; }
