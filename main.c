@@ -70,7 +70,7 @@ void disable_flag(u8 flag);
 #pragma region Memory
 
 //memory vars
-u8 memory[65536];
+u8 ram[65536];
 u8 *rom;
 #define STACK_ADDR 0x0100
 
@@ -149,11 +149,21 @@ int check_terminate() {
 #pragma region MemoryFunctions
 
 u8 bus_read(u16 address) {
-    return memory[address];
+
+    if (address < 0x0800) {
+        return ram[address];
+    }
+    else if (address >= 0x8000) {
+        return rom[address - 0x8000];
+    }
+
+    return 0x00;
 }
 
 void bus_write(u8 value, u16 address) {
-    memory[address] = value;
+    if (address < 0x0800) {
+        ram[address] = value;
+    }
 }
 
 #pragma endregion
