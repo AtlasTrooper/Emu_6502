@@ -42,6 +42,9 @@ As a result:
 - System-specific behavior (memory mapping, I/O, peripherals) is **not implemented by default**
 - The `bus_read` and `bus_write` functions are currently implemented **only for the custom test ROMs** written to validate this emulator
 
+If you intend to emulate a specific system (such as the NES, Commodore 64, or Apple II), you will need to modify these bus functions to reflect that system’s memory map and hardware behavior.
+
+
 ## Sources & References
 
 ### Instruction Set Documentation
@@ -55,8 +58,3 @@ As a result:
   https://www.masswerk.at/6502/assembler.html
 - 6502 Disassembler  
   https://www.masswerk.at/6502/disassembler.html
-
-
-
-If you intend to emulate a specific system (such as the NES, Commodore 64, or Apple II), you will need to modify these bus functions to reflect that system’s memory map and hardware behavior.
-
