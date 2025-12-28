@@ -9,6 +9,7 @@
 #define I(op, cyc, fn, mode) { op, cyc, fn, mode }
 #define ERR { "", 0, NOP, implied }   // illegal / unused opcode
 
+#define MAX_OPCODE_SIZE 4
 
 enum ADDR_MODE {
     implied,
@@ -28,13 +29,17 @@ enum ADDR_MODE {
 
 typedef struct {
     // Opcode hex num, cycleCount, ptr to function, addr mode
-    char opcode[10];
+    char opcode[MAX_OPCODE_SIZE];
     int cycles_count;
     void (*instruction_ptr)(void);
 
     enum ADDR_MODE addr_mode;
 } cpu_instruction;
 
+/*Apologies but I am not going to describe the operation of every
+ * single opcode, for that you can read the documentation which is easily
+ * locatable on the internet, not to mention listed in the README file of the repo
+ */
 void LDA();
 void LDX();
 void LDY();

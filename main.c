@@ -45,8 +45,8 @@ void cpu_cycle();
 
 /*Prints the cpu register values, as well as the Interrupt request vector
  *
- *  PC  IRQ  SR AC X  Y  SP
- * XXXX XXXX XX XX XX XX XX
+ *  PC  AC X  Y  SR SP OPERAND:LO OPERAND:HI
+ * XXXX XX XX XX XX XX  unsinged   unsigned 
  *
 */
 void print_registers();
@@ -70,9 +70,12 @@ void disable_flag(u8 flag);
 #pragma region Memory
 
 //memory vars
-u8 ram[65536];
-u8 *rom;
+#define MAX_RAM_BYTES 65536
 #define STACK_ADDR 0x0100
+
+u8 ram[MAX_RAM_BYTES];
+u8 *rom;
+
 
 /*
  * returns a single byte from memory
@@ -104,15 +107,6 @@ int check_terminate();
 
 #pragma endregion
 
-//TBD: Unsure where to put these yet:
-
-/*
- *Not the same as Bit Test
- *This returns true if the specified
- *bit is enabled and false if otherwise
- */
-
-
 /*------------------------------------IMPLEMENTATION-----------------------------------------*/
 
 #pragma region MainloopFunctions
@@ -134,7 +128,7 @@ int load_rom(char filename[]) {
 }
 
 int check_terminate() {
-    if (rom[cpu.regs.PC] == 0x00) {
+   if (rom[cpu.regs.PC] == 0x00) {
         LINE
         printf("Terminating...\n");
         LINE
@@ -148,6 +142,7 @@ int check_terminate() {
 
 #pragma region MemoryFunctions
 
+//Modify the following two functions per your cartridge format
 u8 bus_read(u16 address) {
 
     if (address < 0x0800) {
@@ -202,8 +197,6 @@ void AddressMode(enum ADDR_MODE mode) {
     //cpu.operand = 0x00;
     cpu.operand16 = 0x00;
 
-
-    //TODO: RESPEC FETCH SWITCH TO MATCH NEW ADDRESS MODE OPERAND USEAGE
     switch (byte_count) {
         case 1: {
             cpu.lo = rom[cpu.regs.PC + 1];
@@ -612,14 +605,6 @@ void LSR(){
 }
 
 void ROL(){
-/*
- * Step-by-step algorithm
-  Save old Carry
-  Set Carry from original bit 7
-  Shift left
-  Insert old Carry into bit 0
-  Update Z and N
-*/
   u8 old_carry = cpu.regs.SR & 1;
   cpu.regs.SR &=~1;
   if(cpu.cop == 0x2A){
@@ -643,14 +628,6 @@ void ROL(){
 }
 
 void ROR(){
-/*
- * Step-by-step algorithm
-  Save old Carry
-  Set Carry from original bit 0
-  Shift right
-  Insert old Carry into bit 7
-  Update Z and N 
- */
   u8 old_carry = cpu.regs.SR &1;
   cpu.regs.SR &=~1;
   if(cpu.cop == 0x6A){
@@ -730,12 +707,6 @@ void PLP(){
 #pragma region MISC_Instructions
 
 void BIT(){
-  //to do:
-  // grab AC and mem byte
-  // AND them and use result to:
-  // 1. Store bit 7 in N flag
-  // 2. Store bit 6 in V flag
-  // 3. Check Z flag
   u8 res = cpu.regs.AC & bus_read(cpu.operand16);
   res & 0x80 ? enable_flag(N_FLAG): disable_flag(N_FLAG);
 res & 0x40 ? enable_flag(V_FLAG): disable_flag(V_FLAG);
@@ -796,7 +767,7 @@ void BVC(){
 #pragma endregion Conditional_Branch_Instructions
 
 #pragma region Jumps_and_Subroutines
-
+//TODO: Fix jump instructions
 void JMP(){
 
   if(cpu.cop == 0x4C){
@@ -932,20 +903,15 @@ void CPY(){
 #pragma endregion Compare_Instructions
 
 int main(int argc, char *argv[]) {
-    // if (argc < 2) {
-    //     perror("No ROM file provided");
-    //     return -1;
-    // }
+    if (argc < 2) {
+         perror("No ROM file provided");
+         return -1;
+    }
 
     printf("\nOpening file\n");
     if (load_rom(argv[1]) == 1) { return 1; }
 
     printf("Starting emulator\n");
-
-    // //Test
-    // printf("\n %s \n",instruction_set[rom[0]+1].opcode);
-    // instruction_set[rom[0]+1].instruction_ptr();
-    // print_registers();
 
     while (1) {
         cpu_cycle();
